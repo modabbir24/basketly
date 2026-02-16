@@ -13,11 +13,9 @@ struct CategoryTile: View {
     let isSelected: Bool
     
     var body: some View {
-        VStack {
+        VStack(spacing: 8) {
             Image(systemName: category.iconName)
                 .font(.title)
-            
-            Spacer()
             
             Text(category.rawValue)
                 .font(.title3)

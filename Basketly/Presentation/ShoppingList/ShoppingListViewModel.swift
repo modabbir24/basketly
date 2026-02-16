@@ -12,6 +12,7 @@ import SwiftData
 protocol ShoppingListViewModelProtocol: AnyObject {
     var filteredItems: [ShoppingItemViewData] { get }
     var isEmpty: Bool { get }
+    var errorMessage: String? { get set }
 
     func addProduct(name: String, category: ProductCategory) -> Bool
     func deleteProduct(_ viewData: ShoppingItemViewData)
@@ -24,6 +25,7 @@ final class ShoppingListViewModel {
     private let dataStore: ShoppingDataStore
     private(set) var items: [ShoppingItemViewData] = []
     var selectedFilter: ProductCategory?
+    var errorMessage: String?
     
     init(dataStore: ShoppingDataStore) {
         self.dataStore = dataStore
@@ -35,7 +37,7 @@ final class ShoppingListViewModel {
             let persistanceItems = try dataStore.fetchItems()
             self.items = mapToViewData(persistanceItems)
         } catch {
-            items = []
+            errorMessage = "Failed to load items."
         }
     }
     
@@ -59,7 +61,11 @@ extension ShoppingListViewModel: ShoppingListViewModelProtocol {
         let isDuplicate = items.contains { item in
             item.name.caseInsensitiveCompare(trimmed) == .orderedSame && item.category == category
         }
-        guard !isDuplicate else { return false }
+        
+        guard !isDuplicate else {
+            errorMessage = "Item already exists in this category."
+            return false
+        }
         
         let newItem = ShoppingItem(
             name: trimmed,
@@ -69,10 +75,17 @@ extension ShoppingListViewModel: ShoppingListViewModelProtocol {
         
         do {
             try dataStore.addItem(newItem)
-            loadShoppingItems()
+            items.append(
+                ShoppingItemViewData(
+                    id: newItem.persistentModelID,
+                    name: trimmed,
+                    category: category,
+                    isPurchased: false
+                )
+            )
             return true
         } catch {
-            print("Add failed")
+            self.errorMessage = "Failed to add item."
             return false
         }
     }
@@ -91,34 +104,47 @@ extension ShoppingListViewModel: ShoppingListViewModelProtocol {
             guard let item = try dataStore.fetchItem(by: viewData.id) else { return }
             
             try dataStore.deleteItem(item)
-            loadShoppingItems()
+            items.removeAll { $0.id == viewData.id }
         } catch {
-            print("Delete failed")
+            self.errorMessage = "Failed to delete item."
         }
     }
     
     func updateProduct(_ viewData: ShoppingItemViewData) -> Bool {
+        let trimmedName = viewData.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let isDuplicate = items.contains { item in
             item.id != viewData.id
-                && item.name.caseInsensitiveCompare(viewData.name.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
+                && item.name.caseInsensitiveCompare(trimmedName) == .orderedSame
                 && item.category == viewData.category
         }
-        guard !isDuplicate else { return false }
+        
+        guard !isDuplicate else {
+            errorMessage = "Item already exists in this category."
+            return false
+        }
         
         do {
             guard let item = try dataStore.fetchItem(by: viewData.id) else { return false }
             
             try dataStore.editItem(
                 item,
-                name: viewData.name,
+                name: trimmedName,
                 category: viewData.category,
                 isPurchased: viewData.isPurchased
             )
             
-            loadShoppingItems()
+            if let index = items.firstIndex(where: { $0.id == viewData.id }) {
+                items[index] = ShoppingItemViewData(
+                    id: viewData.id,
+                    name: trimmedName,
+                    category: viewData.category,
+                    isPurchased: viewData.isPurchased
+                )
+            }
+
             return true
         } catch {
-            print("Update failed")
+            self.errorMessage = "Failed to update item."
             return false
         }
     }

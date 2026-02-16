@@ -52,7 +52,7 @@ struct EditItemView: View {
                     Button("Save") {
                         save()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || (selectedCategory == originalItem.category && name == originalItem.name))
+                    .disabled(isSaveDisabled)
                 }
             }
         }
@@ -60,6 +60,15 @@ struct EditItemView: View {
 }
 
 private extension EditItemView {
+    var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    var isSaveDisabled: Bool {
+        trimmedName.isEmpty ||
+        (selectedCategory == originalItem.category &&
+         trimmedName == originalItem.name)
+    }
     
     var categorySelector: some View {
         ScrollView(.horizontal, showsIndicators: false) {

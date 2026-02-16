@@ -10,14 +10,15 @@ import SwiftUI
 struct ShoppingItemCell: View {
     
     let viewData: ShoppingItemViewData
-    @Binding var isPurchased: Bool
+    var onToggle: (Bool) -> Void
     var onTapToEdit: (() -> Void)?
     
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(viewData.name)
-                    .strikethrough(isPurchased)
+                    .strikethrough(viewData.isPurchased)
                 
                 Text(viewData.category.rawValue)
                     .font(.caption)
@@ -30,9 +31,11 @@ struct ShoppingItemCell: View {
             
             Spacer()
             
-            Toggle("", isOn: $isPurchased)
-                .toggleStyle(.switch)
-                .labelsHidden()
+            Toggle("", isOn: Binding(
+                get: { viewData.isPurchased },
+                set: { onToggle($0) }
+            ))
+            .labelsHidden()
         }
     }
 }

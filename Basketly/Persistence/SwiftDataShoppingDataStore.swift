@@ -27,8 +27,9 @@ final class SwiftDataShoppingDataStore: ShoppingDataStore {
     ) throws {
         if let name {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            item.name = trimmed
+            if !trimmed.isEmpty {
+                item.name = trimmed
+            }
         }
         
         if let category {

@@ -16,8 +16,6 @@ struct ShoppingListView: View {
     @State private var itemName: String = ""
     @State private var selectedCategory: ProductCategory = .milk
     @State private var editingItem: ShoppingItemViewData?
-    @State private var showDuplicateAlert: Bool = false
-    @State private var showDuplicateEditAlert: Bool = false
     
     var body: some View {
         Group {
@@ -93,39 +91,35 @@ private extension ShoppingListView {
             
             Text("Item Name")
                 .font(.title3)
-                .foregroundColor(.primary)
                 .padding(.horizontal)
             
             TextField("Enter grocery item...", text: $itemName)
                 .textFieldStyle(.roundedBorder)
                 .padding(.horizontal)
-                .foregroundColor(.black)
             
-            categorySelector.padding(.horizontal)
+            categorySelector
+                .padding(.horizontal)
             
             Button {
-                if viewModel.addProduct(name: itemName, category: selectedCategory) {
+                if viewModel.addProduct(
+                    name: itemName,
+                    category: selectedCategory
+                ) {
                     itemName = ""
-                } else {
-                    showDuplicateAlert = true
                 }
-            }
-            label: {
+            } label: {
                 HStack {
                     Image(systemName: "plus")
                     Text("Add Item")
                 }
                 .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
-            .disabled(itemName.trimmingCharacters(in: .whitespaces).isEmpty)
-            .padding()
-            .alert("Duplicate item", isPresented: $showDuplicateAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("An item with this name already exists in \(selectedCategory.rawValue).")
-            }
-            
+            .buttonStyle(.borderedProminent)
+            .disabled(
+                itemName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            )
+            .padding(.horizontal)
+            .padding(.bottom, 12)
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -160,12 +154,9 @@ private extension ShoppingListView {
                         ForEach(items) { item in
                             ShoppingItemCell(
                                 viewData: item,
-                                isPurchased: Binding(
-                                    get: {
-                                        viewModel.items.first(where: { $0.id == item.id })?.isPurchased ?? item.isPurchased
-                                    },
-                                    set: { viewModel.setPurchased(item, isPurchased: $0) }
-                                ),
+                                onToggle: { newValue in
+                                    viewModel.setPurchased(item, isPurchased: newValue)
+                                },
                                 onTapToEdit: {
                                     editingItem = item
                                 }
@@ -206,18 +197,20 @@ private extension ShoppingListView {
                 EditItemView(
                     viewData: item,
                     onSave: { updated in
-                        let success = viewModel.updateProduct(updated)
-                        if !success {
-                            showDuplicateEditAlert = true
-                        }
-                        return success
+                        viewModel.updateProduct(updated)
                     }
                 )
             }
-            .alert("Duplicate item (edit)", isPresented: $showDuplicateEditAlert) {
+            .alert(
+                "Error",
+                isPresented: Binding(
+                    get: { viewModel.errorMessage != nil },
+                    set: { _ in viewModel.errorMessage = nil }
+                )
+            ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Another item with this name already exists in the selected category.")
+                Text(viewModel.errorMessage ?? "")
             }
         }
     }

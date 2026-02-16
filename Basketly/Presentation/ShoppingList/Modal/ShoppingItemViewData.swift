@@ -7,7 +7,7 @@
 
 import SwiftData
 
-struct ShoppingItemViewData: Identifiable {
+struct ShoppingItemViewData: Identifiable, Equatable {
     let id: PersistentIdentifier
     var name: String
     var category: ProductCategory
