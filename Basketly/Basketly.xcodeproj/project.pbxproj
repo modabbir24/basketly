@@ -32,7 +32,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		22265D932F43673C00C4CB65 /* Basketly */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Basketly;
+			path = .;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
