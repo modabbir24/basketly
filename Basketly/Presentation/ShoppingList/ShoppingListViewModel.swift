@@ -12,11 +12,9 @@ import SwiftData
 protocol ShoppingListViewModelProtocol: AnyObject {
     var filteredItems: [ShoppingItemViewData] { get }
     var isEmpty: Bool { get }
-    
-    /// Returns true if the item was added, false if a duplicate (same name + category) already exists.
+
     func addProduct(name: String, category: ProductCategory) -> Bool
     func deleteProduct(_ viewData: ShoppingItemViewData)
-    /// Returns true if updated, false if update would create a duplicate (same name + category on another item).
     func updateProduct(_ viewData: ShoppingItemViewData) -> Bool
     func setPurchased(_ viewData: ShoppingItemViewData, isPurchased: Bool)
 }

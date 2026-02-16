@@ -15,7 +15,6 @@ struct EditItemView: View {
     @State private var selectedCategory: ProductCategory
     
     private let originalItem: ShoppingItemViewData
-    /// Called when user taps Save. Returns true if save succeeded (caller may dismiss), false if duplicate.
     private let onSave: (ShoppingItemViewData) -> Bool
     
     init(
