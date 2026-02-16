@@ -13,10 +13,12 @@ protocol ShoppingListViewModelProtocol: AnyObject {
     var filteredItems: [ShoppingItemViewData] { get }
     var isEmpty: Bool { get }
     
-    func addProduct(name: String, category: ProductCategory)
+    /// Returns true if the item was added, false if a duplicate (same name + category) already exists.
+    func addProduct(name: String, category: ProductCategory) -> Bool
     func deleteProduct(_ viewData: ShoppingItemViewData)
-    func updateProduct(_ viewData: ShoppingItemViewData)
-    func togglePurchased(_ viewData: ShoppingItemViewData)
+    /// Returns true if updated, false if update would create a duplicate (same name + category on another item).
+    func updateProduct(_ viewData: ShoppingItemViewData) -> Bool
+    func setPurchased(_ viewData: ShoppingItemViewData, isPurchased: Bool)
 }
 
 @Observable
@@ -52,9 +54,14 @@ final class ShoppingListViewModel {
 }
 
 extension ShoppingListViewModel: ShoppingListViewModelProtocol {
-    func addProduct(name: String, category: ProductCategory) {
+    func addProduct(name: String, category: ProductCategory) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else { return false }
+        
+        let isDuplicate = items.contains { item in
+            item.name.caseInsensitiveCompare(trimmed) == .orderedSame && item.category == category
+        }
+        guard !isDuplicate else { return false }
         
         let newItem = ShoppingItem(
             name: trimmed,
@@ -65,8 +72,10 @@ extension ShoppingListViewModel: ShoppingListViewModelProtocol {
         do {
             try dataStore.addItem(newItem)
             loadShoppingItems()
+            return true
         } catch {
             print("Add failed")
+            return false
         }
     }
     
@@ -90,25 +99,35 @@ extension ShoppingListViewModel: ShoppingListViewModelProtocol {
         }
     }
     
-    func updateProduct(_ viewData: ShoppingItemViewData) {
+    func updateProduct(_ viewData: ShoppingItemViewData) -> Bool {
+        let isDuplicate = items.contains { item in
+            item.id != viewData.id
+                && item.name.caseInsensitiveCompare(viewData.name.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
+                && item.category == viewData.category
+        }
+        guard !isDuplicate else { return false }
+        
         do {
-            guard let item = try dataStore.fetchItem(by: viewData.id) else { return }
+            guard let item = try dataStore.fetchItem(by: viewData.id) else { return false }
             
             try dataStore.editItem(
                 item,
                 name: viewData.name,
-                category: viewData.category
+                category: viewData.category,
+                isPurchased: viewData.isPurchased
             )
             
             loadShoppingItems()
+            return true
         } catch {
             print("Update failed")
+            return false
         }
     }
     
-    func togglePurchased(_ viewData: ShoppingItemViewData) {
+    func setPurchased(_ viewData: ShoppingItemViewData, isPurchased: Bool) {
         var updated = viewData
-        updated.isPurchased.toggle()
-        updateProduct(updated)
+        updated.isPurchased = isPurchased
+        _ = updateProduct(updated)
     }
 }

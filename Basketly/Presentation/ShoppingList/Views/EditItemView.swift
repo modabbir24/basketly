@@ -15,11 +15,12 @@ struct EditItemView: View {
     @State private var selectedCategory: ProductCategory
     
     private let originalItem: ShoppingItemViewData
-    private let onSave: (ShoppingItemViewData) -> Void
+    /// Called when user taps Save. Returns true if save succeeded (caller may dismiss), false if duplicate.
+    private let onSave: (ShoppingItemViewData) -> Bool
     
     init(
         viewData: ShoppingItemViewData,
-        onSave: @escaping (ShoppingItemViewData) -> Void
+        onSave: @escaping (ShoppingItemViewData) -> Bool
     ) {
         self.originalItem = viewData
         self._name = State(initialValue: viewData.name)
@@ -52,7 +53,7 @@ struct EditItemView: View {
                     Button("Save") {
                         save()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || (selectedCategory == originalItem.category && name == originalItem.name))
                 }
             }
         }
@@ -84,7 +85,8 @@ private extension EditItemView {
         updated.name = trimmed
         updated.category = selectedCategory
         
-        onSave(updated)
-        dismiss()
+        if onSave(updated) {
+            dismiss()
+        }
     }
 }

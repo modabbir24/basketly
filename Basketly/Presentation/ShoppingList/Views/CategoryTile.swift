@@ -15,20 +15,19 @@ struct CategoryTile: View {
     var body: some View {
         VStack {
             Image(systemName: category.iconName)
-                .font(.title2)
+                .font(.title)
+            
+            Spacer()
             
             Text(category.rawValue)
-                .font(.caption)
+                .font(.title3)
+                .foregroundColor(isSelected ? Color.white : category.color)
         }
         .padding()
-        .frame(width: 90)
+        .frame(width: 90, height: 90)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isSelected ? category.color.opacity(0.3) : Color.gray.opacity(0.1))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(isSelected ? category.color : Color.clear, lineWidth: 2)
+                .fill(isSelected ? Color.blue.opacity(0.8) : category.color.opacity(0.3))
         )
     }
 }

@@ -16,6 +16,8 @@ struct ShoppingListView: View {
     @State private var itemName: String = ""
     @State private var selectedCategory: ProductCategory = .milk
     @State private var editingItem: ShoppingItemViewData?
+    @State private var showDuplicateAlert: Bool = false
+    @State private var showDuplicateEditAlert: Bool = false
     
     var body: some View {
         Group {
@@ -33,13 +35,9 @@ struct ShoppingListView: View {
             }
         }
     }
-
 }
 
 private extension ShoppingListView {
-    
-    // MARK: Header
-    
     var headerView: some View {
         VStack(spacing: 8) {
             Image(systemName: "cart.fill")
@@ -64,9 +62,7 @@ private extension ShoppingListView {
                 .foregroundColor(.secondary)
         }
     }
-    
-    // MARK: Empty State
-    
+
     var emptyState: some View {
         ContentUnavailableView(
             "Your grocery list is empty",
@@ -75,46 +71,68 @@ private extension ShoppingListView {
         )
     }
     
-    // MARK: Add Card
-    
     func addItemCard(_ viewModel: ShoppingListViewModel) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             
             Text("Add New Item")
                 .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [.purple, .blue],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+            
+            Text("Item Name")
+                .font(.title3)
+                .foregroundColor(.primary)
+                .padding(.horizontal)
             
             TextField("Enter grocery item...", text: $itemName)
                 .textFieldStyle(.roundedBorder)
+                .padding(.horizontal)
+                .foregroundColor(.black)
             
-            categorySelector
+            categorySelector.padding(.horizontal)
             
             Button {
-                viewModel.addProduct(
-                    name: itemName,
-                    category: selectedCategory
-                )
-                itemName = ""
-                
-            } label: {
+                if viewModel.addProduct(name: itemName, category: selectedCategory) {
+                    itemName = ""
+                } else {
+                    showDuplicateAlert = true
+                }
+            }
+            label: {
                 HStack {
                     Image(systemName: "plus")
                     Text("Add Item")
                 }
                 .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.bordered)
             .disabled(itemName.trimmingCharacters(in: .whitespaces).isEmpty)
+            .padding()
+            .alert("Duplicate item", isPresented: $showDuplicateAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("An item with this name already exists in \(selectedCategory.rawValue).")
+            }
             
         }
-        .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(.systemBackground))
                 .shadow(radius: 4)
         )
     }
-    
-    // MARK: Category Selector
     
     var categorySelector: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -132,8 +150,6 @@ private extension ShoppingListView {
         }
     }
     
-    // MARK: Grouped List
-    
     func groupedList(_ viewModel: ShoppingListViewModel) -> some View {
         let grouped = Dictionary(grouping: viewModel.filteredItems) { $0.category }
         
@@ -144,13 +160,16 @@ private extension ShoppingListView {
                         ForEach(items) { item in
                             ShoppingItemCell(
                                 viewData: item,
-                                onToggle: {
-                                    viewModel.togglePurchased(item)
+                                isPurchased: Binding(
+                                    get: {
+                                        viewModel.items.first(where: { $0.id == item.id })?.isPurchased ?? item.isPurchased
+                                    },
+                                    set: { viewModel.setPurchased(item, isPurchased: $0) }
+                                ),
+                                onTapToEdit: {
+                                    editingItem = item
                                 }
                             )
-                            .onTapGesture {
-                                editingItem = item
-                            }
                             .swipeActions {
                                 Button(role: .destructive) {
                                     viewModel.deleteProduct(item)
@@ -187,14 +206,22 @@ private extension ShoppingListView {
                 EditItemView(
                     viewData: item,
                     onSave: { updated in
-                        viewModel.updateProduct(updated)
+                        let success = viewModel.updateProduct(updated)
+                        if !success {
+                            showDuplicateEditAlert = true
+                        }
+                        return success
                     }
                 )
+            }
+            .alert("Duplicate item (edit)", isPresented: $showDuplicateEditAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Another item with this name already exists in the selected category.")
             }
         }
     }
 }
-
 
 #Preview {
     ShoppingListView()

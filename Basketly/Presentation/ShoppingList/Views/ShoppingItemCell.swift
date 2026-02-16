@@ -10,25 +10,29 @@ import SwiftUI
 struct ShoppingItemCell: View {
     
     let viewData: ShoppingItemViewData
-    let onToggle: () -> Void
+    @Binding var isPurchased: Bool
+    var onTapToEdit: (() -> Void)?
     
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(viewData.name)
-                    .strikethrough(viewData.isPurchased)
+                    .strikethrough(isPurchased)
                 
                 Text(viewData.category.rawValue)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onTapToEdit?()
+            }
             
             Spacer()
             
-            Button(action: onToggle) {
-                Image(systemName: viewData.isPurchased ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(viewData.isPurchased ? .green : .gray)
-            }
+            Toggle("", isOn: $isPurchased)
+                .toggleStyle(.switch)
+                .labelsHidden()
         }
     }
 }

@@ -22,7 +22,8 @@ final class SwiftDataShoppingDataStore: ShoppingDataStore {
     func editItem(
         _ item: ShoppingItem,
         name: String?,
-        category: ProductCategory?
+        category: ProductCategory?,
+        isPurchased: Bool? = nil
     ) throws {
         if let name {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -33,14 +34,21 @@ final class SwiftDataShoppingDataStore: ShoppingDataStore {
         if let category {
             item.category = category
         }
+        
+        if let isPurchased {
+            item.isPurchased = isPurchased
+        }
+        try context.save()
     }
     
     func addItem(_ item: ShoppingItem) throws {
         context.insert(item)
+        try context.save()
     }
     
     func deleteItem(_ item: ShoppingItem) throws {
         context.delete(item)
+        try context.save()
     }
     
     func fetchItem(by id: PersistentIdentifier) throws -> ShoppingItem? {
